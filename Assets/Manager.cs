@@ -1,23 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Firebase.Database;
 using Firebase.Functions;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
-using Button = UnityEngine.UI.Button;
 
 public class Manager : MonoBehaviour
 {
-    [SerializeField] private ScrollRect _scrollView;
-    [SerializeField] private TMP_InputField _searchInput;
-    [SerializeField] private Button _searchButton;
+    private FirebaseFunctions _functions;
     [SerializeField] private Transform _mContentContainer;
     [SerializeField] private GameObject _mItemPrefab;
-    private FirebaseFunctions _functions;
-    void Awake()
+    [SerializeField] private ScrollRect _scrollView;
+    [SerializeField] private Button _searchButton;
+    [SerializeField] private TMP_InputField _searchInput;
+
+    private void Awake()
     {
         _scrollView.gameObject.SetActive(false);
         _functions = FirebaseFunctions.DefaultInstance;
@@ -25,30 +24,25 @@ public class Manager : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         _searchButton.GetComponent<Button>().onClick.AddListener(TaskSearchSong);
+        var reference = FirebaseDatabase.DefaultInstance.RootReference;
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Return))
-        {
-            TaskSearchSong();
-        }
+        if (Input.GetKeyDown(KeyCode.Return)) TaskSearchSong();
     }
 
     private void SearchForSong(string songName)
     {
         Debug.Log(songName);
         GetSimilarSongs("0", 5, 0.5)
-            .ContinueWith((data) =>
+            .ContinueWith(data =>
             {
-                foreach (var key in data.Result.Keys)
-                {
-                    Debug.Log(key);
-                }
+                foreach (var key in data.Result.Keys) Debug.Log(key);
             });
     }
 
@@ -77,5 +71,6 @@ public class Manager : MonoBehaviour
             ["minSimilarityScore"] = minSimilarityScore
         };
         var function = _functions.GetHttpsCallable("getSongRecommendations");
-        return function.CallAsync(data).ContinueWith((task) => task.Result.Data as IDictionary);    }
+        return function.CallAsync(data).ContinueWith(task => task.Result.Data as IDictionary);
+    }
 }
