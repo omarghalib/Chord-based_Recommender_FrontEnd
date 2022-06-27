@@ -1,0 +1,37 @@
+{
+  "project_info": {
+    "project_number": "844784209904",
+    "firebase_url": "https://chord-based-recommender-default-rtdb.firebaseio.com",
+    "project_id": "chord-based-recommender",
+    "storage_bucket": "chord-based-recommender.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:844784209904:ios:c43dc025c6566046fa9735",
+        "android_client_info": {
+          "package_name": "com.OmarAbushaban.recommender"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "844784209904-47jbot9t5venenjh2eijk3bgut8083u7.apps.googleusercontent.com"
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOFFKwsD-PWBabSK2UPwgMislbma9uD7s"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 0
+        },
+        "appinvite_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

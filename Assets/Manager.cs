@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Firebase.Functions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -14,10 +16,11 @@ public class Manager : MonoBehaviour
     [SerializeField] private Button _searchButton;
     [SerializeField] private Transform _mContentContainer;
     [SerializeField] private GameObject _mItemPrefab;
-
+    private FirebaseFunctions _functions;
     void Awake()
     {
         _scrollView.gameObject.SetActive(false);
+        _functions = FirebaseFunctions.DefaultInstance;
         Debug.Log("start");
     }
 
@@ -39,7 +42,14 @@ public class Manager : MonoBehaviour
     private void SearchForSong(string songName)
     {
         Debug.Log(songName);
-        AddToSongsScrollArea(songName);
+        GetSimilarSongs("0", 5, 0.5)
+            .ContinueWith((data) =>
+            {
+                foreach (var key in data.Result.Keys)
+                {
+                    Debug.Log(key);
+                }
+            });
     }
 
     private void AddToSongsScrollArea(string songName)
@@ -57,4 +67,15 @@ public class Manager : MonoBehaviour
     {
         SearchForSong(_searchInput.text);
     }
+
+    private Task<IDictionary> GetSimilarSongs(string songId, int numOfSongs, double minSimilarityScore)
+    {
+        var data = new Dictionary<string, object>
+        {
+            ["songId"] = songId,
+            ["numOfSongs"] = numOfSongs,
+            ["minSimilarityScore"] = minSimilarityScore
+        };
+        var function = _functions.GetHttpsCallable("getSongRecommendations");
+        return function.CallAsync(data).ContinueWith((task) => task.Result.Data as IDictionary);    }
 }
