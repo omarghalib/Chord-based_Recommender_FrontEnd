@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Firebase.Database;
+using Firebase.Extensions;
 using Firebase.Functions;
 using TMPro;
 using UnityEngine;
@@ -10,6 +11,7 @@ using UnityEngine.UI;
 public class Manager : MonoBehaviour
 {
     private FirebaseFunctions _functions;
+    private FirebaseDatabase _reference;
     [SerializeField] private Transform _mContentContainer;
     [SerializeField] private GameObject _mItemPrefab;
     [SerializeField] private ScrollRect _scrollView;
@@ -27,7 +29,8 @@ public class Manager : MonoBehaviour
     private void Start()
     {
         _searchButton.GetComponent<Button>().onClick.AddListener(TaskSearchSong);
-        var reference = FirebaseDatabase.DefaultInstance.RootReference;
+        _reference = FirebaseDatabase.DefaultInstance;
+        fetchSongNamesAndIds();
     }
 
     // Update is called once per frame
@@ -72,5 +75,20 @@ public class Manager : MonoBehaviour
         };
         var function = _functions.GetHttpsCallable("getSongRecommendations");
         return function.CallAsync(data).ContinueWith(task => task.Result.Data as IDictionary);
+    }
+
+    private void fetchSongNamesAndIds()
+    {
+        _reference.GetReference("songs").OrderByChild("title")
+            .GetValueAsync().ContinueWithOnMainThread(task => {
+                if (task.IsFaulted) {
+                    // Handle the error...
+                }
+                else if (task.IsCompleted) {
+                    Debug.Log("got the names");
+                    DataSnapshot snapshot = task.Result;
+                    // Do something with snapshot...
+                }
+            });
     }
 }
