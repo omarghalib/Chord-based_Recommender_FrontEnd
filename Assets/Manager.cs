@@ -17,7 +17,8 @@ public class Manager : MonoBehaviour
     [SerializeField] private ScrollRect _scrollView;
     [SerializeField] private Button _searchButton;
     [SerializeField] private TMP_InputField _searchInput;
-
+    private Dictionary<string, string> _songNames = new();
+    private Dictionary<string, string> _songIds = new();
     private void Awake()
     {
         _scrollView.gameObject.SetActive(false);
@@ -30,7 +31,19 @@ public class Manager : MonoBehaviour
     {
         _searchButton.GetComponent<Button>().onClick.AddListener(TaskSearchSong);
         _reference = FirebaseDatabase.DefaultInstance;
-        fetchSongNamesAndIds();
+        FetchSongNamesAndIds().ContinueWith(snapshot =>
+        {
+            foreach (var child in snapshot.Result.Children)
+            {
+                string title = (string) child.Child("title").Value;
+                if (!_songIds.ContainsKey(title))
+                {
+                    _songIds[title] = child.Key;
+                }
+
+                _songNames[child.Key] = title;
+            }
+        });
     }
 
     // Update is called once per frame
@@ -42,10 +55,15 @@ public class Manager : MonoBehaviour
     private void SearchForSong(string songName)
     {
         Debug.Log(songName);
-        GetSimilarSongs("0", 5, 0.5)
-            .ContinueWith(data =>
+        GetSimilarSongs(_songIds[songName], 5, 0.7)
+            .ContinueWithOnMainThread(data =>
             {
-                foreach (var key in data.Result.Keys) Debug.Log(key);
+                foreach (string key in data.Result.Keys)
+                {
+                    Debug.Log(key);
+                    Debug.Log(_songNames[key]);
+                    AddToSongsScrollArea(_songNames[key]);
+                }
             });
     }
 
@@ -77,18 +95,22 @@ public class Manager : MonoBehaviour
         return function.CallAsync(data).ContinueWith(task => task.Result.Data as IDictionary);
     }
 
-    private void fetchSongNamesAndIds()
+    private Task<DataSnapshot> FetchSongNamesAndIds()
     {
-        _reference.GetReference("songs").OrderByChild("title")
-            .GetValueAsync().ContinueWithOnMainThread(task => {
+        return _reference.GetReference("songs").OrderByChild("title")
+            .GetValueAsync().ContinueWithOnMainThread(task =>
+            {
                 if (task.IsFaulted) {
                     // Handle the error...
                 }
                 else if (task.IsCompleted) {
                     Debug.Log("got the names");
                     DataSnapshot snapshot = task.Result;
-                    // Do something with snapshot...
+                    Debug.Log(snapshot.ChildrenCount);
+                    return task.Result;
                 }
+
+                return null;
             });
     }
 }
