@@ -17,6 +17,8 @@ public class Manager : MonoBehaviour
     [SerializeField] private ScrollRect _scrollView;
     [SerializeField] private Button _searchButton;
     [SerializeField] private TMP_InputField _searchInput;
+    [SerializeField] private Scrollbar _similarityScrollbar;
+    [SerializeField] private TextMeshProUGUI _similarityText;
     private Dictionary<string, string> _songNames = new();
     private Dictionary<string, string> _songIds = new();
     private void Awake()
@@ -30,6 +32,7 @@ public class Manager : MonoBehaviour
     private void Start()
     {
         _searchButton.GetComponent<Button>().onClick.AddListener(TaskSearchSong);
+        _similarityScrollbar.onValueChanged.AddListener(UpdateSimilarityText);
         _reference = FirebaseDatabase.DefaultInstance;
         FetchSongNamesAndIds().ContinueWith(snapshot =>
         {
@@ -54,10 +57,11 @@ public class Manager : MonoBehaviour
 
     private void SearchForSong(string songName)
     {
-        Debug.Log(songName);
-        GetSimilarSongs(_songIds[songName], 5, 0.7)
+        double minSimilarityScore = _similarityScrollbar.value;
+        GetSimilarSongs(_songIds[songName], 5, minSimilarityScore)
             .ContinueWithOnMainThread(data =>
             {
+                ClearSongsScrollArea();
                 foreach (string key in data.Result.Keys)
                 {
                     Debug.Log(key);
@@ -78,6 +82,14 @@ public class Manager : MonoBehaviour
         itemGo.transform.localScale = Vector2.one;
     }
 
+    private void ClearSongsScrollArea()
+    {
+        for (int i = 0; i < _mContentContainer.childCount; i++)
+        {
+            Destroy(_mContentContainer.GetChild(i).gameObject);
+        }
+    }
+    
     private void TaskSearchSong()
     {
         SearchForSong(_searchInput.text);
@@ -101,7 +113,7 @@ public class Manager : MonoBehaviour
             .GetValueAsync().ContinueWithOnMainThread(task =>
             {
                 if (task.IsFaulted) {
-                    // Handle the error...
+                    Debug.Log("error fetching names");
                 }
                 else if (task.IsCompleted) {
                     Debug.Log("got the names");
@@ -112,5 +124,11 @@ public class Manager : MonoBehaviour
 
                 return null;
             });
+    }
+
+    private void UpdateSimilarityText(float val)
+    {
+        int newVal = (int) (val * 100);
+        _similarityText.text = "Minimum similar chords: "+newVal+"%";
     }
 }
